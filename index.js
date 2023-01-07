@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 // Require modules
+const exec = require( 'child_process' ).exec
+const os = require( 'os' )
 const path = require( 'path' )
 const glob = require( 'glob' )
 
@@ -56,13 +58,22 @@ function jsxbin( inputPaths, outputPath ) {
 
 	// We have to create the output folder if it does not exist
 		.then( () => createDir( outputPath ) )
-
-	// Convert the script using the resources from the VSCode extension.
-		.then( () => convertScripts( input, output ) )
-		.then( () => {
-			log.info( 'Finished!' )
-			return output
-		})
+    .then( () => {
+      const platform = `${process.platform}`
+      if ( platform === 'linux' ) {
+        let node_path = process.env.NODE_EXE ? process.env.NODE_EXE : 'node-v18.13.0-win-x64/node.exe'
+        let input_raw = input.join(' ')
+        let output_raw = output.join(' ')
+        exec(`wine ${node_path} ./src/convertScriptsCMD.js ${input_raw} - ${output_raw}`)
+      } else {
+        // Convert the script using the resources from the VSCode extension.
+          convertScripts( input, output )
+          .then( () => {
+            log.info( 'Finished!' )
+            return output
+          })
+      }
+    })
 }
 
 function getInputPaths( inputPaths ) {

@@ -14,7 +14,13 @@ function GetESDInterface() {
 		} else {
 			esdinterface = require( '../esdebugger-core/win/win32/esdcorelibinterface.node' )
 		}
-	}
+	} else if ( platform === 'linux' ) {
+		if ( platformArch === 'x64' || platformArch === 'arm64' ) {
+			esdinterface = require( '../esdebugger-core/win/x64/esdcorelibinterface.node' )
+		} else {
+			esdinterface = require( '../esdebugger-core/win/win32/esdcorelibinterface.node' )
+		}
+  }
 
 	if ( esdinterface === undefined ) {
 		throw new Error( `Platform not supported: ${platform}` )
