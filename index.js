@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Require modules
-const exec = require( 'child_process' ).exec
+const {execFileSync} = require( 'child_process' )
 const os = require( 'os' )
 const path = require( 'path' )
 const glob = require( 'glob' )
@@ -55,23 +55,24 @@ function jsxbin( inputPaths, outputPath ) {
 				outputPath = output[0]
 			}
 		})
-
-	// We have to create the output folder if it does not exist
+    // We have to create the output folder if it does not exist
 		.then( () => createDir( outputPath ) )
     .then( () => {
       const platform = `${process.platform}`
       if ( platform === 'linux' ) {
         let node_path = process.env.NODE_EXE ? process.env.NODE_EXE : 'node-v18.13.0-win-x64/node.exe'
-        let input_raw = input.join(' ')
-        let output_raw = output.join(' ')
-        exec(`wine ${node_path} ./src/convertScriptsCMD.js ${input_raw} - ${output_raw}`)
+        let convert_script = __dirname + '/src/convertScriptsCMD.js'
+        console.debug(`use convert script path ${convert_script}`)
+        let args = JSON.stringify({input,output})
+        execFileSync('wine',[node_path,convert_script,args],{stdio:'inherit'})
+        return output
       } else {
         // Convert the script using the resources from the VSCode extension.
-          convertScripts( input, output )
-          .then( () => {
-            log.info( 'Finished!' )
-            return output
-          })
+        return convertScripts( input, output )
+        .then( () => {
+          log.info( 'Finished!' )
+          return output
+        })
       }
     })
 }
