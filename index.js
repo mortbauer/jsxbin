@@ -5,16 +5,23 @@ const {execFileSync} = require( 'child_process' )
 const os = require( 'os' )
 const path = require( 'path' )
 const glob = require( 'glob' )
+const crypto = require( 'crypto')
+const fs = require( 'fs' )
+
+function tmpFile() {
+    return path.join(os.tmpdir(),`${crypto.randomBytes(6).readUIntLE(0,6).toString(36)}.jsxbin`);
+}
 
 const log = require( './src/logger' )
 const createDir = require( './src/createDir' )
-const convertScripts = require( './src/convertScripts' )
+const {convertScripts,convertContent} = require( './src/convertScripts' )
 
 log.level = '1'
 
 module.exports = jsxbin
 module.exports.getInputPaths = getInputPaths
 module.exports.getOutputPaths = getOutputPaths
+module.exports.convertContent = convertContentCrossPlatform
 
 /**
  * Converts input file into jsxbin file using ExtendScript Toolkit
@@ -75,6 +82,24 @@ function jsxbin( inputPaths, outputPath ) {
         })
       }
     })
+}
+
+function convertContentCrossPlatform( content, scriptPath) {
+    const platform = `${process.platform}`
+  if ( platform === 'linux' ) {
+      let node_path = process.env.NODE_EXE ? process.env.NODE_EXE : 'node-v18.13.0-win-x64/node.exe'
+      let convert_script = __dirname + '/src/convertContentCMD.js'
+      console.debug(`use convert script path ${convert_script}`)
+      let tmpfilepath = tmpFile()
+      let args = JSON.stringify({content,scriptPath,output:tmpfilepath})
+      execFileSync('wine',[node_path,convert_script,args],{stdio:'inherit'})
+      res = fs.readFileSync(tmpfilepath)
+      fs.unlinkSync(tmpfilepath)
+      return res
+    } else {
+      // Convert the script using the resources from the VSCode extension.
+      return convertContent( content, scriptPath)
+    }
 }
 
 function getInputPaths( inputPaths ) {

@@ -38,29 +38,33 @@ function getESDError() {
 	throw new Error( `Error with ESTK: '${message}'` )
 }
 
+function convertContent(content,scriptPath){
+    initializeESDInterface()
+	  const includePath = path.dirname( scriptPath )
+    const content_clean = content.replace( /^\uFEFF/, '' )
+    if (content_clean){
+      const apiData = GetESDInterface().esdCompileToJSXBin( content, scriptPath, includePath )
+      log.debug( 'Convert response', { apiData })
+      if ( apiData.status === 0 ) {
+        return apiData.data
+      }
+      getESDError()
+    }
+}
+
 function convertFileContents( scriptPath ) {
 	let content
 	try {
 		content = fs.readFileSync( scriptPath ).toString()
-		if ( content ) {
-			content = content.replace( /^\uFEFF/, '' )
-		}
 	} catch ( error ) {
 		log.error( error )
 		return null
 	}
 
-	const includePath = path.dirname( scriptPath )
-
 	if ( content ) {
-		const apiData = GetESDInterface().esdCompileToJSXBin( content, scriptPath, includePath )
-		log.debug( 'Convert response', { apiData })
-		if ( apiData.status === 0 ) {
-			return apiData.data
-		}
-
-		getESDError()
+    return convertContent(content,scriptPath)
 	}
+
 }
 
 let initialized = false
@@ -75,19 +79,23 @@ function initializeESDInterface() {
 		}
 	}
 }
+function convertScripts( input, output ) {
+    log.verbose( 'Converting', { input, output })
+    initializeESDInterface()
+    for ( let i = 0; i < input.length; i++ ) {
+      const scriptPath = input[i]
+      const outputPath = output[i]
+      const compiledContent = convertFileContents( scriptPath )
+      if ( compiledContent ) {
+        log.verbose( 'Writing', { outputPath, compiledContent })
+        fs.writeFileSync( outputPath, compiledContent )
+      } else {
+        log.warn( `No compiled content found for '${scriptPath}'. Skipping.` )
+      }
+    }
+  }
 
-module.exports = function convertScripts( input, output ) {
-	log.verbose( 'Converting', { input, output })
-	initializeESDInterface()
-	for ( let i = 0; i < input.length; i++ ) {
-		const scriptPath = input[i]
-		const outputPath = output[i]
-		const compiledContent = convertFileContents( scriptPath )
-		if ( compiledContent ) {
-			log.verbose( 'Writing', { outputPath, compiledContent })
-			fs.writeFileSync( outputPath, compiledContent )
-		} else {
-			log.warn( `No compiled content found for '${scriptPath}'. Skipping.` )
-		}
-	}
+module.exports = {
+  convertScripts: convertScripts,
+  convertContent: convertContent,
 }
