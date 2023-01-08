@@ -69,7 +69,7 @@ function jsxbin( inputPaths, outputPath ) {
       if ( platform === 'linux' ) {
         let node_path = process.env.NODE_EXE ? process.env.NODE_EXE : 'node-v18.13.0-win-x64/node.exe'
         let convert_script = __dirname + '/src/convertScriptsCMD.js'
-        console.debug(`use convert script path ${convert_script}`)
+        log.debug(`use convert script path ${convert_script}`)
         let args = JSON.stringify({input,output})
         execFileSync('wine',[node_path,convert_script,args],{stdio:'inherit'})
         return output
@@ -89,7 +89,7 @@ function convertContentCrossPlatform( content, scriptPath) {
   if ( platform === 'linux' ) {
       let node_path = process.env.NODE_EXE ? process.env.NODE_EXE : 'node-v18.13.0-win-x64/node.exe'
       let convert_script = __dirname + '/src/convertContentCMD.js'
-      console.debug(`use convert script path ${convert_script}`)
+      log.debug(`use convert script path ${convert_script}`)
       let tmpfilepath = tmpFile()
       let args = JSON.stringify({content,scriptPath,output:tmpfilepath})
       execFileSync('wine',[node_path,convert_script,args],{stdio:'inherit'})
