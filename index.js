@@ -8,8 +8,8 @@ const glob = require( 'glob' )
 const crypto = require( 'crypto')
 const fs = require( 'fs' )
 
-function tmpFile() {
-    return path.join(os.tmpdir(),`${crypto.randomBytes(6).readUIntLE(0,6).toString(36)}.jsxbin`);
+function tmpFile(ext='jsx') {
+    return path.join(os.tmpdir(),`${crypto.randomBytes(6).readUIntLE(0,6).toString(36)}.${ext}`);
 }
 
 const log = require( './src/logger' )
@@ -90,11 +90,14 @@ function convertContentCrossPlatform( content, scriptPath) {
       let node_path = process.env.NODE_EXE ? process.env.NODE_EXE : 'node-v18.13.0-win-x64/node.exe'
       let convert_script = __dirname + '/src/convertContentCMD.js'
       log.debug(`use convert script path ${convert_script}`)
-      let tmpfilepath = tmpFile()
-      let args = JSON.stringify({content,scriptPath,output:tmpfilepath})
+      let result_path = tmpFile(ext='jsxbin')
+      let input_path = tmpFile(ext='jsx')
+      fs.writeFileSync(input_path,content)
+      let args = JSON.stringify({input:input_path,scriptPath,output:result_path})
       execFileSync('wine',[node_path,convert_script,args],{stdio:'inherit'})
-      res = fs.readFileSync(tmpfilepath)
-      fs.unlinkSync(tmpfilepath)
+      res = fs.readFileSync(result_path)
+      fs.unlinkSync(result_path)
+      fs.unlinkSync(input_path)
       return res
     } else {
       // Convert the script using the resources from the VSCode extension.
